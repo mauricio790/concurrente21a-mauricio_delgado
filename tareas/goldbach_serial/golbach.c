@@ -64,7 +64,6 @@ int cantidadSumas(long long num, FILE* output){
             if (mostrarSumas == 1){
                 fprintf(output,"%lld + %lld,", par1 , par2);     
             }
-            
         }
     }
     
