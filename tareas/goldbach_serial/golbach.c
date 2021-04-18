@@ -1,104 +1,172 @@
-#include<stdio.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <inttypes.h>
+#include <errno.h>
+#include <stdlib.h>
 
+#define SIZE 100000
 
-void sumasGolbach(long long);
-void primos(long long num,long long *vecPrimos);
-int cantidadSumas(long long num, FILE* output);
-int esPrimo(long long num, long long *vecPrimo);
+void sumasGolbach(int64_t num, int64_t* arregloSumas);
+int64_t cantidadSumas(int64_t num,int64_t candtidadPrimos ,int64_t * arregloSumas);
+void golbachPar(int64_t num,int64_t mostrarSumas ,int64_t* arregloSumas);
+void golbachImpar(int64_t num,int64_t mostrarSumas ,int64_t* arregloSumas);
+int64_t siguientePrimo(int64_t primo);
+void imprimirResultado(int64_t* arregloSumas, int64_t tamanoArreglo
+  , int64_t signo, bool es_par);
+
 int main(){
     FILE* input = stdin;
-    long long num = 0ll;
+    int64_t num = 0ll;
+    int64_t *arregloSumas;  
+    arregloSumas = (int64_t *)calloc(SIZE,sizeof(int64_t));
 
-    while(fscanf(input,"%lld",&num) == 1){
-        sumasGolbach(num);
+    while(fscanf(input,"%"PRId64,&num) == 1){
+        sumasGolbach(num,arregloSumas);
     }
-
 
     return EXIT_SUCCESS;
 }
 
-void sumasGolbach(long long num){
-    FILE* output = stdout;
+void sumasGolbach(int64_t num,int64_t* arregloSumas){
     int mostrarSumas = 0;
+    
+    printf("%" PRId64 ": ", num);
 
     if(num < 0){
         mostrarSumas = 1;
         num *= -1;
     }
 
+    if (num >= -5 && num <= 5) {
+        printf("NA\n");
+    }else 
+        if(num%2 == 0){
+            golbachPar(num,mostrarSumas,arregloSumas);
+        } else{
+            golbachImpar(num,mostrarSumas,arregloSumas);
+        }
+}
+  
+
+
+void golbachPar(int64_t num,int64_t mostrarSumas ,int64_t* arregloSumas){
+    int64_t par1 = 2;
+    int64_t par2 = 2;
+    int64_t indice = 0;
     
-    if(mostrarSumas == 0){
-        fprintf(output, "%lld: %d sums\n",num,cantidadSumas(num,output));
+   
+    //Si se pasa de la mitad, da vuelta a los pares de la suma
+    //entonces se pone hasta la mitad para evitar repetir pares inversos
+    while (par1 <= (num/2)) {
+        par2 = par1;
+        //se evalúa el primer par con los siguientes primos
+        while (par2 < num) {
+            //se suman los pares para ver si la suma es exitosa y se agregan al arreglo
+            if (par1 + par2 == num) {
+                arregloSumas[indice] = par1;
+                arregloSumas[indice+1] = par2;
+                indice += 2; //se salta al siguiente par
+            }
+            par2 = siguientePrimo(par2);
+        }
+        par1 = siguientePrimo(par1);
+    }
+    imprimirResultado(arregloSumas, indice, mostrarSumas, true);
+}
+
+
+void golbachImpar(int64_t num,int64_t mostrarSumas ,int64_t* arregloSumas){
+    int64_t indice = 0;
+     int64_t primo1 = 2;
+    int64_t primo2 = 2;
+    int64_t primo3 = 2;
+
+    // el primer primo llega a la mitad para no repetir sumas
+    while (primo1 <= (num/2)) {
+    primo2 = primo1;//no hay sumas con primos más pequeños que primo1
+    //se suman todos los primos hasta num para verificar las sumas 
+    while (primo2 < num) {
+      primo3 = primo2; //no hay sumas con primos más pequeños que 2
+      // el tercer numero cambia mientras el segundo se mantiene
+      while (primo3 < num) {
+        // si la suma da el numero de goldbach se agregan los numeros al arreglo
+        if (primo1 + primo2 + primo3 == num) {
+          arregloSumas[indice] = primo1;
+          arregloSumas[indice+1] = primo2;
+          arregloSumas[indice+2] = primo3;
+          indice += 3;
+        }
+        primo3 = siguientePrimo(primo3);
+      }
+      primo2 = siguientePrimo(primo2);
+    }
+    primo1 = siguientePrimo(primo1);
+  }
+  imprimirResultado(arregloSumas, indice, mostrarSumas, false);
+}
+
+
+int64_t siguientePrimo(int64_t primo){
+    bool hay_primo = false;
+  int64_t divisor = 0;
+  // si es 2, suma un 1 y lo retorna
+  if (primo == 2) {
+    return primo+=1;
+  } else {
+    // sumar dos a mi primo actual e intentar dividir ese numero entre nuemros
+    // imapares, si llega a 1 es primo
+    while (hay_primo == false) {
+      primo += 2;
+      divisor = primo - 2;
+      while (primo != 1) {
+        // dividir el numero hasta que alguno llegue a 1
+        if (primo % divisor == 0) {
+          break;
+        } else {
+          divisor -= 2;
+        }
+      }
+      if (divisor == 1) {
+        hay_primo = true;
+      }
+    }
+  }
+    return primo;
+}
+
+void imprimirResultado(int64_t* arregloSumas, int64_t tamanoArreglo
+  , int64_t mostrarSuma, bool es_par) {
+    int64_t cantidadSumas = 0;
+    if (es_par == true) {
+        cantidadSumas = tamanoArreglo / 2;
     } else {
-        fprintf(output, "-%lld: %d sums: ",num,cantidadSumas((num*-1),output));
+        cantidadSumas = tamanoArreglo / 3;
     }
-    
-    
-    
-}
-
-int cantidadSumas(long long num, FILE* output){
-    int cantidad = 0;
-    int mostrarSumas = 0;
-    long long *vecPrimos;
-    long long par1, par2;
-
-    output = stdout;
-
-    vecPrimos = (long long *)calloc(num,sizeof(long long));
-    
-    if(num < 0){
-        mostrarSumas = 1;
-        num *= -1;
-        
-    }
-
-    primos(num,vecPrimos);
-    if(num % 2 == 0){
-        for(par2 = vecPrimos[0]; par2>0; par2 = vecPrimos[par2 +1 ]){
-            par1 = num-par2;
-            if(esPrimo(num-par2,vecPrimos) == 1){
-                cantidad++;
+    // si el signo es positivo unicamente se imprimen la cantidad de sumas
+    if (mostrarSuma == 0) {  // ej: 6: 1 sums
+        printf("%" PRId64 " sums\n", cantidadSumas);
+    } else {  // si es negativo se imprimen la cantidad de sumas y las sumas
+        printf("%" PRId64 " sums:", cantidadSumas);
+        // si es par el for va de 2 en 2
+        if (es_par ==  true) {
+            for (int64_t indice = 0; indice < tamanoArreglo; indice+=2) {
+                printf(" %" PRId64 " + ", arregloSumas[indice]);
+                printf("%" PRId64 "", arregloSumas[indice+1]);
+                if (indice + 2 != tamanoArreglo) {
+                    printf(",");
+                }
             }
-            if (mostrarSumas == 1){
-                fprintf(output,"%lld + %lld,", par1 , par2);     
+        } else {  // si es impar el for va de 3 en 3
+            for (int64_t indice = 0; indice < tamanoArreglo; indice+=3) {
+                printf(" %" PRId64 " + ", arregloSumas[indice]);
+                printf(" %" PRId64 " + ", arregloSumas[indice+1]);
+                printf("%" PRId64 "", arregloSumas[indice+2]);
+                if (indice + 3 != tamanoArreglo) {
+                   printf(",");
+                }
             }
         }
-    }
-    
-
-    free(vecPrimos);
-    return cantidad;
-}
-
-int esPrimo(long long num, long long *vecPrimo){
-    int esPrimo = 0;
-    int indicePrimo = 0;
-    while(esPrimo == 0 && indicePrimo != 0){
-        if(vecPrimo[indicePrimo]==num){
-            esPrimo = 1;
-        }
-    }
-    
-    return esPrimo;
-}
-
-void primos(long long num, long long *vecPrimos){
-
-    long long contadorPrimo = 0;
-        
-    for(long long value = 2ll; value < num; value++){
-        long long multiplo = 2;
-        int esPrimo = 1;
-        while(esPrimo == 1 && multiplo < value){
-            if(value % multiplo == 0){
-                esPrimo = 0;
-            }
-            multiplo++;
-        }
-        if(esPrimo == 1){
-            vecPrimos[contadorPrimo] = value;
-        }
+        printf("\n");
     }
 }
