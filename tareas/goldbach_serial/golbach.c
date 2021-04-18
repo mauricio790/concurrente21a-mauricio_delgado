@@ -1,3 +1,11 @@
+/**
+  @file golbach.c
+  @brief imprime la cantidad de sumas que genera la conjetura de 
+  números positivos y muestra la cantidad y las sumas de los negativos
+  @author Mauricio Delgado Leandro
+  @date 18/04/2021
+*/
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -15,6 +23,11 @@ int64_t siguientePrimo(int64_t primo);
 void imprimirResultado(int64_t* arregloSumas, int64_t tamanoArreglo
   , int64_t signo, bool es_par);
 
+
+/**
+ * @brief lee los números de la entrada estándar y ejecuta el método que encuentra las sumas
+ * @returns retorna 0, indica que no hay error
+ */
 int main(){
     FILE* input = stdin;
     int64_t num = 0ll;
@@ -28,6 +41,12 @@ int main(){
     return EXIT_SUCCESS;
 }
 
+
+/**
+ * @brief método encargado de encontrar la cantidad de sumas y mostrarlas en caso de indicarlo
+ * @param int64_t num, número leído de la entrada estándar
+ * @param int64_t* arregloSumas, acá se almacenan los sumandos 
+ */
 void sumasGolbach(int64_t num,int64_t* arregloSumas){
     int mostrarSumas = 0;
     
@@ -49,7 +68,11 @@ void sumasGolbach(int64_t num,int64_t* arregloSumas){
 }
   
 
-
+/**
+ * @brief método encargado de encontrar las sumas de goldbach de números pares
+ * @param int64_t num, número leído de la entrada estándar
+ * @param int64_t* arregloSumas, acá se almacenan los sumandos
+ */
 void golbachPar(int64_t num,int64_t mostrarSumas ,int64_t* arregloSumas){
     int64_t par1 = 2;
     int64_t par2 = 2;
@@ -75,7 +98,11 @@ void golbachPar(int64_t num,int64_t mostrarSumas ,int64_t* arregloSumas){
     imprimirResultado(arregloSumas, indice, mostrarSumas, true);
 }
 
-
+/**
+ * @brief método encargado de encontrar las sumas de goldbach de números impares
+ * @param int64_t num, número leído de la entrada estándar
+ * @param int64_t* arregloSumas, acá se almacenan los sumandos
+ */
 void golbachImpar(int64_t num,int64_t mostrarSumas ,int64_t* arregloSumas){
     int64_t indice = 0;
      int64_t primo1 = 2;
@@ -106,7 +133,11 @@ void golbachImpar(int64_t num,int64_t mostrarSumas ,int64_t* arregloSumas){
   imprimirResultado(arregloSumas, indice, mostrarSumas, false);
 }
 
-
+/**
+ * @brief calcula el siguiente número primo
+ * @param int64_t número primo actual
+ * @return int64_t retorna el siguiente número primo
+ */
 int64_t siguientePrimo(int64_t primo){
     bool hay_primo = false;
   int64_t divisor = 0;
@@ -135,6 +166,14 @@ int64_t siguientePrimo(int64_t primo){
     return primo;
 }
 
+/**
+ * @brief método encargado de mostrar la cantidad de sumas de todos los números ingresados y además
+ * muestra la suma de los números indicados
+ * @param int64_t* arregloSumas, arreglo que contendrá las sumas
+ * @param int64_t tamanoArreglo, contiene el tamaño del arreglo
+ * @param int64_t mostrarSuma, indicador de si se muestran o no las sumas
+ * @param bool sses_par, indica si el número es par o no
+ */
 void imprimirResultado(int64_t* arregloSumas, int64_t tamanoArreglo
   , int64_t mostrarSuma, bool es_par) {
     int64_t cantidadSumas = 0;
