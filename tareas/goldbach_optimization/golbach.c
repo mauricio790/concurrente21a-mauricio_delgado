@@ -34,21 +34,13 @@ typedef struct
   size_t thread_count;
   size_t total_num;
   size_t id_num;
-  dynamic_array_t cola_entrada;
+  queue_t cola_entrada;
 
   pthread_mutex_t can_access_shared;
   char** array_sumas;
 
 }shared_data_t;
 
-typedef struct 
-{
-  size_t inicio_bloque;
-  size_t final_bloque;
-
-  shared_data_t* shared_data;
-
-}private_data_t;
 
 int analyze_arguments(int argc, char* argv[], shared_data_t* shared_data);
 int create_threads(shared_data_t* shared_data);
@@ -89,9 +81,10 @@ int main(int argc, char* argv[]) {
       shared_data->total_num = 0;
       error = analyze_arguments(argc, argv, shared_data);
       if (error == EXIT_SUCCESS) {
+        error = queue_init(&shared_data->cola_entrada);
         if(error == EXIT_SUCCESS){
           while(fscanf(input,"%"PRId64,&num) == 1){
-            append_dynamic_array(&shared_data->cola_entrada,num); 
+            queue_append(&shared_data->cola_entrada,num); 
             shared_data->total_num++;
           }
           ///Crear la matriz antes de procesar números
@@ -135,8 +128,7 @@ int analyze_arguments(int argc, char* argv[], shared_data_t* shared_data) {
     } 
   } else {
     fprintf(stderr, "usage: thread_count\n");
-    shared_data->thread_count = sysconf(_SC_NPROCESSORS_ONLN);
-    error = 1;
+      error = 1;
   }
   return error;
 }
@@ -150,27 +142,15 @@ int create_threads(shared_data_t* shared_data) {
   assert(shared_data);
   
   int error = EXIT_SUCCESS;
-  size_t tam_bloque = shared_data->total_num/shared_data->thread_count;
 
   pthread_t* threads = (pthread_t*) calloc(shared_data->thread_count
     , sizeof(pthread_t));
 
-  private_data_t* private_data = (private_data_t*) calloc(shared_data->thread_count,sizeof(private_data_t));
     if (threads) {
       for (size_t index = 0; index < shared_data->thread_count; ++index) {
         if (error == EXIT_SUCCESS) {
-          private_data[index].shared_data = shared_data;
-          //agregar final e inicio de bloque
-          private_data[index].inicio_bloque = tam_bloque * index;
-          if(index + 1 == shared_data->thread_count){ 
-            //cuando el módulo de la cantidad de hilos y números a procesar es diferente de 0
-            //van a quedar números sin resolver al final, ese último hilo va  procesar la diferencia 
-            private_data[index].final_bloque = shared_data->total_num - 1;
-          }else{
-            private_data[index].final_bloque = ( tam_bloque * (index + 1) ) - 1;
-          }
           if (pthread_create(&threads[index], /*attr*/ NULL, sumas_golbach
-          ,  &private_data[index]) == EXIT_SUCCESS) {
+          ,  (void *)shared_data) == EXIT_SUCCESS) {
           } else {
             fprintf(stderr, "error: could not create thread %zu\n", index);
             error = 21;
@@ -184,7 +164,6 @@ int create_threads(shared_data_t* shared_data) {
         pthread_join(threads[index], /*value_ptr*/ NULL);
       }
 
-      free(private_data);
       free(threads);
     }
 
@@ -198,16 +177,20 @@ int create_threads(shared_data_t* shared_data) {
  */
 void* sumas_golbach(void* data){
     int mostrar_sumas = 0;
-    private_data_t *private_data = (private_data_t *)data;
+    shared_data_t *shared_data = (shared_data_t *)data;
 
     int64_t num = 0;
+    size_t id_num = 0;
     
     
-    while(private_data->inicio_bloque <= private_data->final_bloque){
+    while(!queue_is_empty(&shared_data->cola_entrada)){
       
-      num = private_data->shared_data->cola_entrada.array[private_data->inicio_bloque];
-      //printf("num %" PRId64 " en pos %" PRId64 "\n",num,private_data->inicio_bloque);
-      sprintf(private_data->shared_data->array_sumas[private_data->inicio_bloque], "%" PRId64 ": ", num);
+      pthread_mutex_lock(&shared_data->can_access_shared);
+      num = queue_dequeue(&shared_data->cola_entrada);
+      id_num = shared_data->id_num++; ///Toma el índice a procesar y lo incrementa al siguiente
+      pthread_mutex_unlock(&shared_data->can_access_shared);
+
+      sprintf(shared_data->array_sumas[id_num], "%" PRId64 ": ", num);
       
       if(num < 0){
         mostrar_sumas = 1;
@@ -215,13 +198,12 @@ void* sumas_golbach(void* data){
       } 
 
       if (num >= -5 && num <= 5) {
-        strcat(private_data->shared_data->array_sumas[private_data->inicio_bloque],"NA");
+        strcat(shared_data->array_sumas[id_num],"NA");
       }else if(num%2 == 0){
-            golbach_par(num,mostrar_sumas,private_data->shared_data,private_data->inicio_bloque);
+            golbach_par(num,mostrar_sumas,shared_data,id_num);
         } else {
-            golbach_impar(num,mostrar_sumas,private_data->shared_data,private_data->inicio_bloque);
+            golbach_impar(num,mostrar_sumas,shared_data,id_num);
         }
-      private_data->inicio_bloque++;
     }
     return NULL;
 }
