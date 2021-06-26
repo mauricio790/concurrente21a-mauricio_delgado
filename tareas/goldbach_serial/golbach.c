@@ -20,12 +20,12 @@ typedef struct
 }dynamic_array_t;
 
 void sumas_golbach(int64_t num);
-int64_t cantidad_sumas(int64_t num,int64_t candtidadPrimos ,dynamic_array_t * array_sumas);
+
 void golbach_par(int64_t num,int64_t mostrar_sumas);
 void golbach_impar(int64_t num,int64_t mostrar_sumas);
 int64_t siguiente_primo(int64_t primo);
 void imprimir_resultado(dynamic_array_t* array_sumas
-  , int64_t mostrar_suma, bool es_par); 
+  , int64_t mostrar_suma, int64_t cantidad_sumas, bool es_par); 
 void append_dynamic_array(dynamic_array_t*, int64_t);
 
 
@@ -91,7 +91,9 @@ void sumas_golbach(int64_t num){
 void golbach_par(int64_t num,int64_t mostrar_sumas ){
     int64_t par1 = 2;
     int64_t par2 = 2;
-    
+
+    int64_t cantidad_sumas = 0;
+
     dynamic_array_t* array_sumas;
     array_sumas = (dynamic_array_t*) calloc(1,sizeof(dynamic_array_t));
     array_sumas->capacidad = 0;
@@ -104,14 +106,17 @@ void golbach_par(int64_t num,int64_t mostrar_sumas ){
         while (par2 < num) {
             //se suman los pares para ver si la suma es exitosa y se agregan al arreglo
             if (par1 + par2 == num) {
-                append_dynamic_array(array_sumas,par1); 
-                append_dynamic_array(array_sumas,par2);
+                if(mostrar_sumas == 1){
+                  append_dynamic_array(array_sumas,par1); 
+                  append_dynamic_array(array_sumas,par2);
+                }
+                cantidad_sumas++;
             }
             par2 = siguiente_primo(par2);
         }
         par1 = siguiente_primo(par1);
     }
-    imprimir_resultado(array_sumas, mostrar_sumas, true);
+    imprimir_resultado(array_sumas, mostrar_sumas, cantidad_sumas, true);
     free(array_sumas);
 }
 
@@ -121,15 +126,15 @@ void golbach_par(int64_t num,int64_t mostrar_sumas ){
  * @param dynamic_array_t* array_sumas, acá se almacenan los sumandos
  */
 void golbach_impar(int64_t num,int64_t mostrar_sumas ){
-     int64_t primo1 = 2;
+    int64_t primo1 = 2;
     int64_t primo2 = 2;
     int64_t primo3 = 2;
+
+    int64_t cantidad_sumas = 0;
 
     dynamic_array_t* array_sumas;
     array_sumas = (dynamic_array_t*) calloc(1,sizeof(dynamic_array_t));
     array_sumas->capacidad = 0;
-
-   
 
     // el primer primo llega a la mitad para no repetir sumas
     while (primo1 <= (num/2)) {
@@ -141,9 +146,12 @@ void golbach_impar(int64_t num,int64_t mostrar_sumas ){
       while (primo3 < num) {
         // si la suma da el numero de goldbach se agregan los numeros al arreglo
         if (primo1 + primo2 + primo3 == num) {
-          append_dynamic_array(array_sumas,primo1);
-          append_dynamic_array(array_sumas,primo2);
-          append_dynamic_array(array_sumas,primo3);
+          if(mostrar_sumas == 1){
+            append_dynamic_array(array_sumas,primo1);
+            append_dynamic_array(array_sumas,primo2);
+            append_dynamic_array(array_sumas,primo3);
+          }
+          cantidad_sumas ++;
         }
         primo3 = siguiente_primo(primo3);
       }
@@ -151,7 +159,7 @@ void golbach_impar(int64_t num,int64_t mostrar_sumas ){
     }
     primo1 = siguiente_primo(primo1);
   }
-  imprimir_resultado(array_sumas,  mostrar_sumas, false);
+  imprimir_resultado(array_sumas,  mostrar_sumas, cantidad_sumas, false);
    free(array_sumas);
 }
 
@@ -170,8 +178,8 @@ int64_t siguiente_primo(int64_t primo){
     // sumar dos a mi primo actual e intentar dividir ese numero entre nuemros
     // imapares, si llega a 1 es primo
     while (hay_primo == false) {
+      divisor = primo;
       primo += 2;
-      divisor = primo - 2;
       while (primo != 1) {
         // dividir el numero hasta que alguno llegue a 1
         if (primo % divisor == 0) {
@@ -197,13 +205,8 @@ int64_t siguiente_primo(int64_t primo){
  * @param bool sses_par, indica si el número es par o no
  */
 void imprimir_resultado(dynamic_array_t* array_sumas
-  , int64_t mostrar_suma, bool es_par) {
-    int64_t cantidad_sumas = 0;
-    if (es_par == true) {
-        cantidad_sumas = array_sumas->capacidad / 2;
-    } else {
-        cantidad_sumas = array_sumas->capacidad / 3;
-    }
+  , int64_t mostrar_suma, int64_t cantidad_sumas, bool es_par) {
+
     // si el signo es positivo unicamente se imprimen la cantidad de sumas
     if (mostrar_suma == 0) {  // ej: 6: 1 sums
         printf("%" PRId64 " sums\n", cantidad_sumas);
