@@ -35,6 +35,8 @@ typedef struct
   size_t id_num;
   queue_t cola_entrada;
 
+  int64_t* primo;
+  int64_t mayor;
   
   pthread_mutex_t can_access_shared;
   char** array_sumas;
@@ -52,7 +54,7 @@ void* sumas_golbach(void* data);
 int64_t cantidad_sumas(int64_t num,int64_t candtidadPrimos ,dynamic_array_t * array_sumas);
 void golbach_par(int64_t num,int64_t mostrar_sumas,shared_data_t* shared_data, size_t id_num);
 void golbach_impar(int64_t num,int64_t mostrar_sumas,shared_data_t* shared_data, size_t id_num);
-int64_t es_primo(int64_t num);
+int64_t es_primo(int64_t num,shared_data_t* shared_data);
 
 void imprimir_resultado(dynamic_array_t* array_sumas
   , int64_t mostrar_suma, bool es_par, shared_data_t* shared_data,size_t id_num, int64_t cantidad_sumas); 
@@ -79,6 +81,7 @@ int main(int argc, char* argv[]) {
       shared_data->thread_count = sysconf(_SC_NPROCESSORS_ONLN);
       shared_data->id_num = 0;
       shared_data->total_num = 0;
+      shared_data->mayor = 0;
       error = analyze_arguments(argc, argv, shared_data);
       if (error == EXIT_SUCCESS) {
         error = queue_init(&shared_data->cola_entrada);
@@ -86,11 +89,16 @@ int main(int argc, char* argv[]) {
           while(fscanf(input,"%"PRId64,&num) == 1){
             queue_append(&shared_data->cola_entrada,num); 
             shared_data->total_num++;
+            if(num<0){num = num * -1;}
+            if(num > shared_data->mayor){ shared_data->mayor = num; }
           }
           ///Crear la matriz antes de procesar números
           shared_data->array_sumas = (char**) create_matrix(shared_data->total_num
             ,MAX_SUMAS , sizeof(char));
             
+          shared_data->primo = (int64_t*) calloc(shared_data->mayor,sizeof(int64_t*));
+          shared_data->primo[1] = 1;
+
           create_threads(shared_data);
 
           //Imprime todos los resultados
@@ -106,7 +114,7 @@ int main(int argc, char* argv[]) {
     }
 
 
-    //free(shared_data->primos);
+    free(shared_data->primo);
     free(shared_data->array_sumas);
     free(shared_data);
     
@@ -170,19 +178,31 @@ int create_threads(shared_data_t* shared_data) {
     return error;
 }
 
-int64_t es_primo(int64_t num){
+int64_t es_primo(int64_t num,shared_data_t* shared_data){
+  //printf("se cae en %"PRId64"\n",num);
   if(num == 2){
-    return 1;
+    return shared_data->primo[1];
   }//caso trivial
-  if(num <= 1 || !(num & 1)){
+  if(num <= 1){
     return 0;
   } //caso trivial
-  for(int64_t impares = 3;impares*impares<=num;impares+=2){
-    if(num%impares == 0){
-      return 0;
-    }
+  if(!(num & 1)){
+    shared_data->primo[num-1] = 0;
+    return 0;
   }
-  return 1;
+
+  if(shared_data->primo[num-1] != 1){
+    for(int64_t impares = 3;impares*impares<=num;impares+=2){
+      if(num%impares == 0){
+       shared_data->primo[num-1] = 0;
+       return 0;
+      }
+    }
+    shared_data->primo[num - 1] = 1;
+  }
+  
+    
+  return shared_data->primo[num-1];
 }
 
 
@@ -242,9 +262,9 @@ void golbach_par(int64_t num,int64_t mostrar_sumas ,shared_data_t* shared_data, 
     //Si se pasa de la mitad, da vuelta a los pares de la suma
     //entonces se pone hasta la mitad para evitar repetir pares inversos
     for(par1 = 2; (par1 *2)<=num; par1+=2) {
-        if(es_primo(par1)){
+        if(es_primo(par1,shared_data)){
           par2 = num - par1;
-          if(es_primo(par2)){
+          if(es_primo(par2,shared_data)){
             cantidad_sumas++;
             if(mostrar_sumas == 1){
               append_dynamic_array(array_sumas,par1); 
@@ -279,13 +299,13 @@ void golbach_impar(int64_t num,int64_t mostrar_sumas ,shared_data_t* shared_data
 
     // el primer primo llega a la mitad para no repetir sumas
     for(primo1 = 2;primo1 * 3 <= (num);primo1+=2)  {
-      if(es_primo(primo1)){
+      if(es_primo(primo1,shared_data)){
        // printf("%"PRId64": %" PRId64 " es primo\n",num,primo1);
         for(primo2 = primo1;primo1 + primo2 <=num;primo2+=2){
-          if(es_primo(primo2)){
+          if(es_primo(primo2,shared_data)){
             // printf("%"PRId64" es primo\n",primo2);
             primo3 = num - primo1 - primo2;
-            if(primo3 >=primo2 && es_primo(primo3)){
+            if(primo3 >=primo2 && es_primo(primo3,shared_data)){
               cantidad_sumas++;
               //printf("%"PRId64" es suma\n",primo1+primo2+primo3);
               if(mostrar_sumas == 1){
