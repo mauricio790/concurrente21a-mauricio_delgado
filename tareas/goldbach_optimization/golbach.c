@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
           } 
           
           //Criba
-          for(int64_t divisor = 2; divisor<shared_data->mayor + 1;divisor++){
+          for(int64_t divisor = 2; (divisor*divisor)<shared_data->mayor + 1;divisor++){
             if(shared_data->primos[divisor-1]==true ){
               for(int64_t multiplos = (divisor * divisor); multiplos<=shared_data->mayor;multiplos+=divisor){
                 shared_data->primos[multiplos-1] = false;
