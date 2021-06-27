@@ -103,7 +103,8 @@ int main(int argc, char* argv[]) {
 
           shared_data->primos = (bool*) calloc(shared_data->mayor + 1,sizeof(bool*));
           
-          for(int index = 0; index < shared_data->mayor; index++){
+          shared_data->primos[0] = false;
+          for(int index = 1; index < shared_data->mayor; index++){
               shared_data->primos[index] = true;
           } 
           
