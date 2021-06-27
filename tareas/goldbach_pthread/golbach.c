@@ -105,18 +105,19 @@ int main(int argc, char* argv[]) {
             }
           }
           
-          shared_data->primos = (bool*) calloc(shared_data->mayor + 1,sizeof(bool*));
+         
+          shared_data->primos = (bool*) calloc(shared_data->mayor,sizeof(bool*));
           
-          for(int index = 0; index < shared_data->mayor; index++){
+          shared_data->primos[0] = false;
+          for(int index = 1; index < shared_data->mayor; index++){
               shared_data->primos[index] = true;
           } 
           
-          //Criba
+           //Criba
           for(int64_t divisor = 2; divisor<shared_data->mayor + 1;divisor++){
             if(shared_data->primos[divisor-1]==true ){
               for(int64_t multiplos = (divisor * divisor); multiplos<=shared_data->mayor;multiplos+=divisor){
                 shared_data->primos[multiplos-1] = false;
-                printf("%" PRId64 " es primo\n",multiplos-1);
               }
             }
           }
@@ -249,7 +250,6 @@ void* sumas_golbach(void* data){
     while(private_data->inicio_bloque <= private_data->final_bloque){
       
       num = private_data->shared_data->cola_entrada.array[private_data->inicio_bloque];
-      printf("num %" PRId64 " en pos %" PRId64 "\n",num,private_data->inicio_bloque);
       sprintf(private_data->shared_data->array_sumas[private_data->inicio_bloque], "%" PRId64 ": ", num);
       if(num < 0){
         mostrar_sumas = 1;
@@ -279,28 +279,28 @@ void golbach_par(int64_t num,int64_t mostrar_sumas ,shared_data_t* shared_data, 
     int64_t par1 = 2;
     int64_t par2 = 2;
     int64_t cantidad_sumas = 0;
+
     dynamic_array_t* array_sumas;
     array_sumas = (dynamic_array_t*) calloc(1,sizeof(dynamic_array_t));
     array_sumas->capacidad = 0;
    
     //Si se pasa de la mitad, da vuelta a los pares de la suma
     //entonces se pone hasta la mitad para evitar repetir pares inversos
-    while (par1 <= (num/2)) {
-        par2 = par1;
-        //se evalúa el primer par con los siguientes primos
-        while (par2 < num) {
-            //se suman los pares para ver si la suma es exitosa y se agregan al arreglo
-            if (par1 + par2 == num) {
-                if(mostrar_sumas == 1){
-                  append_dynamic_array(array_sumas,par1); 
-                  append_dynamic_array(array_sumas,par2);
-                }
-                cantidad_sumas++;
+    for(par1 = 2; (par1 *2)<=num; par1+=2) {
+        if(shared_data->primos[par1 -1] == true){
+          par2 = num - par1;
+          if(shared_data->primos[par2 - 1]==true){
+            cantidad_sumas++;
+            if(mostrar_sumas == 1){
+              append_dynamic_array(array_sumas,par1); 
+              append_dynamic_array(array_sumas,par2);
             }
-            par2 = siguiente(par2,shared_data);
+          }
         }
-        par1 = siguiente(par1,shared_data);
-    }
+        if(par1 == 2){
+          par1 = 1;
+        }
+    } 
     imprimir_resultado(array_sumas, mostrar_sumas, true, shared_data,id_num,cantidad_sumas);
     free(array_sumas);
 }
@@ -394,7 +394,6 @@ void imprimir_resultado(dynamic_array_t* array_sumas
   , int64_t mostrar_suma, bool es_par, shared_data_t* shared_data,
   size_t id_num,int64_t cantidad_sumas) {
     char *a_concatenar = (char*) calloc(MAX_SUMAS,sizeof(char));
-    printf("%"PRId64" cantidad sumas: %"PRId64"\n",id_num,cantidad_sumas);
     // si el signo es positivo unicamente se imprimen la cantidad de sumas
     if (mostrar_suma == 0) {  // ej: 6: 1 sums
       sprintf(a_concatenar,"%" PRId64 " sums", cantidad_sumas);

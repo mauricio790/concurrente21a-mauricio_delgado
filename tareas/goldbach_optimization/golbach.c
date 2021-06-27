@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
             ,MAX_SUMAS , sizeof(char));
             
 
-          shared_data->primos = (bool*) calloc(shared_data->mayor + 1,sizeof(bool*));
+          shared_data->primos = (bool*) calloc(shared_data->mayor,sizeof(bool*));
           
           shared_data->primos[0] = false;
           for(int index = 1; index < shared_data->mayor; index++){
@@ -254,22 +254,21 @@ void golbach_par(int64_t num,int64_t mostrar_sumas ,shared_data_t* shared_data, 
    
     //Si se pasa de la mitad, da vuelta a los pares de la suma
     //entonces se pone hasta la mitad para evitar repetir pares inversos
-    while (par1 <= (num/2)) {
-        par2 = par1;
-        //se evalúa el primer par con los siguientes primos
-        while (par2 < num) {
-            //se suman los pares para ver si la suma es exitosa y se agregan al arreglo
-            if (par1 + par2 == num) {
-                if(mostrar_sumas == 1){
-                  append_dynamic_array(array_sumas,par1); 
-                  append_dynamic_array(array_sumas,par2);
-                }
-                cantidad_sumas++;
+    for(par1 = 2; (par1 *2)<=num; par1+=2) {
+        if(shared_data->primos[par1 -1] == true){
+          par2 = num - par1;
+          if(shared_data->primos[par2 - 1]==true){
+            cantidad_sumas++;
+            if(mostrar_sumas == 1){
+              append_dynamic_array(array_sumas,par1); 
+              append_dynamic_array(array_sumas,par2);
             }
-            par2 = siguiente(par2,shared_data);
+          }
         }
-        par1 = siguiente(par1,shared_data);
-    }
+        if(par1 == 2){
+          par1 = 1;
+        }
+    } 
     imprimir_resultado(array_sumas, mostrar_sumas, true, shared_data,id_num,cantidad_sumas);
     free(array_sumas);
 }
