@@ -3,7 +3,7 @@ HEADERS=$(wildcard *.h)
 SOURCES=$(wildcard *.c)
 OBJECTS=$(SOURCES:%.c=build/%.o)
 EXEFILE=bin/$(APPNAME)
-
+	
 CC=cc
 CFLAGS=-Wall -Wextra
 LIBS=-pthread

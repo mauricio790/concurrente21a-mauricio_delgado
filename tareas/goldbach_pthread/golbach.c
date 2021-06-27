@@ -21,7 +21,7 @@
 #include <sys/random.h>
 #include <unistd.h>
 
-#define MAX_SUMAS 10000
+#define MAX_SUMAS 3900000
 
 typedef struct 
 {
@@ -35,7 +35,8 @@ typedef struct
   size_t total_num;
   size_t id_num;
   dynamic_array_t cola_entrada;
-
+  bool* primos;
+  int64_t mayor;
   pthread_mutex_t can_access_shared;
   char** array_sumas;
 
@@ -45,6 +46,8 @@ typedef struct
 {
   size_t inicio_bloque;
   size_t final_bloque;
+
+ 
 
   shared_data_t* shared_data;
 
@@ -61,9 +64,11 @@ int64_t cantidad_sumas(int64_t num,int64_t candtidadPrimos ,dynamic_array_t * ar
 void golbach_par(int64_t num,int64_t mostrar_sumas,shared_data_t* shared_data, size_t id_num);
 void golbach_impar(int64_t num,int64_t mostrar_sumas,shared_data_t* shared_data, size_t id_num);
 int64_t siguiente_primo(int64_t primo);
+int64_t siguiente(int64_t primo, shared_data_t* shared_data);
+
 
 void imprimir_resultado(dynamic_array_t* array_sumas
-  , int64_t mostrar_suma, bool es_par, shared_data_t* shared_data,size_t id_num); 
+  , int64_t mostrar_suma, bool es_par, shared_data_t* shared_data,size_t id_num,int64_t cantidad_sumas); 
 
 void append_dynamic_array(dynamic_array_t*, int64_t);
 
@@ -77,7 +82,6 @@ int main(int argc, char* argv[]) {
 
     FILE* input = stdin;
     int64_t num = 0ll;
-
    
     shared_data_t *shared_data =
       (shared_data_t*) calloc(1,sizeof(shared_data_t));
@@ -87,13 +91,53 @@ int main(int argc, char* argv[]) {
       shared_data->thread_count = sysconf(_SC_NPROCESSORS_ONLN);
       shared_data->id_num = 0;
       shared_data->total_num = 0;
+      shared_data->mayor = 0;
       error = analyze_arguments(argc, argv, shared_data);
       if (error == EXIT_SUCCESS) {
         if(error == EXIT_SUCCESS){
           while(fscanf(input,"%"PRId64,&num) == 1){
             append_dynamic_array(&shared_data->cola_entrada,num); 
             shared_data->total_num++;
+            if(num<0){
+              num *= -1;
+            }
+            if(num > shared_data->mayor){
+              shared_data->mayor = num;
+            }
           }
+          
+          shared_data->primos = (bool*) calloc(shared_data->mayor + 1,sizeof(bool*));
+          
+          for(int index = 0; index < shared_data->mayor; index++){
+              shared_data->primos[index] = true;
+          } 
+          
+          //Criba
+          for(int64_t divisor = 2; divisor<shared_data->mayor + 1;divisor++){
+            if(shared_data->primos[divisor-1]==true ){
+              for(int64_t multiplos = (divisor * divisor); multiplos<=shared_data->mayor;multiplos+=divisor){
+                shared_data->primos[multiplos-1] = false;
+                printf("%" PRId64 " es primo\n",multiplos-1);
+              }
+            }
+          }
+          //Criba
+          
+/*
+          int64_t index = siguiente_primo(2) - 1;
+          int es_mayor = index < shared_data->mayor;
+          while(es_mayor == true){
+       
+            if(index >= shared_data->mayor){
+              es_mayor = false;
+            }
+            else{
+              printf("primo %" PRId64 "\n", index);
+              shared_data->primos[index] = true;
+              index = siguiente_primo(index + 1) - 1;
+            } 
+          } 
+*/
           ///Crear la matriz antes de procesar números
           shared_data->array_sumas = (char**) create_matrix(shared_data->total_num
             ,MAX_SUMAS , sizeof(char));
@@ -113,7 +157,7 @@ int main(int argc, char* argv[]) {
     }
 
 
-
+    free(shared_data->primos);
     free(shared_data->array_sumas);
     free(shared_data);
     
@@ -206,9 +250,8 @@ void* sumas_golbach(void* data){
     while(private_data->inicio_bloque <= private_data->final_bloque){
       
       num = private_data->shared_data->cola_entrada.array[private_data->inicio_bloque];
-      //printf("num %" PRId64 " en pos %" PRId64 "\n",num,private_data->inicio_bloque);
+      printf("num %" PRId64 " en pos %" PRId64 "\n",num,private_data->inicio_bloque);
       sprintf(private_data->shared_data->array_sumas[private_data->inicio_bloque], "%" PRId64 ": ", num);
-      
       if(num < 0){
         mostrar_sumas = 1;
         num *= -1;
@@ -236,7 +279,7 @@ void* sumas_golbach(void* data){
 void golbach_par(int64_t num,int64_t mostrar_sumas ,shared_data_t* shared_data, size_t id_num ){
     int64_t par1 = 2;
     int64_t par2 = 2;
-    
+    int64_t cantidad_sumas = 0;
     dynamic_array_t* array_sumas;
     array_sumas = (dynamic_array_t*) calloc(1,sizeof(dynamic_array_t));
     array_sumas->capacidad = 0;
@@ -249,14 +292,17 @@ void golbach_par(int64_t num,int64_t mostrar_sumas ,shared_data_t* shared_data, 
         while (par2 < num) {
             //se suman los pares para ver si la suma es exitosa y se agregan al arreglo
             if (par1 + par2 == num) {
-                append_dynamic_array(array_sumas,par1); 
-                append_dynamic_array(array_sumas,par2);
+                if(mostrar_sumas == 1){
+                  append_dynamic_array(array_sumas,par1); 
+                  append_dynamic_array(array_sumas,par2);
+                }
+                cantidad_sumas++;
             }
-            par2 = siguiente_primo(par2);
+            par2 = siguiente(par2,shared_data);
         }
-        par1 = siguiente_primo(par1);
+        par1 = siguiente(par1,shared_data);
     }
-    imprimir_resultado(array_sumas, mostrar_sumas, true, shared_data,id_num);
+    imprimir_resultado(array_sumas, mostrar_sumas, true, shared_data,id_num,cantidad_sumas);
     free(array_sumas);
 }
 
@@ -270,6 +316,7 @@ void golbach_impar(int64_t num,int64_t mostrar_sumas ,shared_data_t* shared_data
      int64_t primo1 = 2;
     int64_t primo2 = 2;
     int64_t primo3 = 2;
+    int64_t cantidad_sumas = 0;
 
     dynamic_array_t* array_sumas;
     array_sumas = (dynamic_array_t*) calloc(1,sizeof(dynamic_array_t));
@@ -285,17 +332,20 @@ void golbach_impar(int64_t num,int64_t mostrar_sumas ,shared_data_t* shared_data
       while (primo3 < num) {
         // si la suma da el numero de goldbach se agregan los numeros al arreglo
         if (primo1 + primo2 + primo3 == num) {
-          append_dynamic_array(array_sumas,primo1);
-          append_dynamic_array(array_sumas,primo2);
-          append_dynamic_array(array_sumas,primo3);
+         if(mostrar_sumas == 1){
+            append_dynamic_array(array_sumas,primo1);
+            append_dynamic_array(array_sumas,primo2);
+            append_dynamic_array(array_sumas,primo3);
+          }
+          cantidad_sumas++;
         }
-        primo3 = siguiente_primo(primo3);
+        primo3 = siguiente(primo3,shared_data);
       }
-      primo2 = siguiente_primo(primo2);
+      primo2 = siguiente(primo2,shared_data);
     }
-    primo1 = siguiente_primo(primo1);
+    primo1 = siguiente(primo1,shared_data);
   }
-  imprimir_resultado(array_sumas,  mostrar_sumas, false,shared_data,id_num);
+  imprimir_resultado(array_sumas,  mostrar_sumas, false,shared_data,id_num,cantidad_sumas);
    free(array_sumas);
 }
 
@@ -343,14 +393,9 @@ int64_t siguiente_primo(int64_t primo){
  */
 void imprimir_resultado(dynamic_array_t* array_sumas
   , int64_t mostrar_suma, bool es_par, shared_data_t* shared_data,
-  size_t id_num) {
-    int64_t cantidad_sumas = 0;
+  size_t id_num,int64_t cantidad_sumas) {
     char *a_concatenar = (char*) calloc(MAX_SUMAS,sizeof(char));
-    if (es_par == true) {
-        cantidad_sumas = array_sumas->capacidad / 2;
-    } else {
-        cantidad_sumas = array_sumas->capacidad / 3;
-    }
+    printf("%"PRId64" cantidad sumas: %"PRId64"\n",id_num,cantidad_sumas);
     // si el signo es positivo unicamente se imprimen la cantidad de sumas
     if (mostrar_suma == 0) {  // ej: 6: 1 sums
       sprintf(a_concatenar,"%" PRId64 " sums", cantidad_sumas);
@@ -384,6 +429,20 @@ void imprimir_resultado(dynamic_array_t* array_sumas
             }
         }
     }
+}
+
+int64_t siguiente(int64_t primo, shared_data_t* shared_data){
+  
+  int64_t siguiente_primo = primo;
+  
+  bool hay_primo = true;
+  while (siguiente_primo < shared_data->mayor && hay_primo ){
+    if(shared_data->primos[siguiente_primo] == true)
+      hay_primo = false;
+    else 
+      siguiente_primo++;
+  }
+  return siguiente_primo + 1;
 }
 
 

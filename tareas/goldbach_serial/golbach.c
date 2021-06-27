@@ -19,15 +19,15 @@ typedef struct
   int64_t capacidad;
 }dynamic_array_t;
 
-void sumas_golbach(int64_t num);
+void sumas_golbach(int64_t num, bool* primos, int64_t mayor);
 
-void golbach_par(int64_t num,int64_t mostrar_sumas);
-void golbach_impar(int64_t num,int64_t mostrar_sumas);
+void golbach_par(int64_t num,int64_t mostrar_sumas, bool* primos , int64_t mayor);
+void golbach_impar(int64_t num,int64_t mostrar_sumas, bool* primos , int64_t mayor);
 int64_t siguiente_primo(int64_t primo);
 void imprimir_resultado(dynamic_array_t* array_sumas
   , int64_t mostrar_suma, int64_t cantidad_sumas, bool es_par); 
 void append_dynamic_array(dynamic_array_t*, int64_t);
-
+int64_t siguiente(int64_t primo, bool* primos, int64_t mayor);
 
 
 /**
@@ -37,19 +37,44 @@ void append_dynamic_array(dynamic_array_t*, int64_t);
 int main(){
     FILE* input = stdin;
     int64_t num = 0ll;
-
+    int64_t mayor = 0;
     dynamic_array_t* array_entrada = (dynamic_array_t*) calloc(1,sizeof(dynamic_array_t));
     //array_entrada->array = (int64_t*) calloc(1,sizeof(int64_t));
     array_entrada->capacidad = 0;
 
     while(fscanf(input,"%"PRId64,&num) == 1){
         append_dynamic_array(array_entrada,num);
+        if(num<0){
+          num *= -1;
+        }
+        if(num > mayor){
+          mayor = num;
+        }
     }
 
+
+    bool* primos = (bool*) calloc(mayor + 1,sizeof(bool));
+     for(int index = 0; index < mayor; index++){
+              primos[index] = true;
+     }
+    
+     //Criba
+          for(int64_t divisor = 2; divisor<mayor + 1;divisor++){
+            if(primos[divisor-1]==true ){
+              for(int64_t multiplos = (divisor * divisor); multiplos<mayor + 1;multiplos+=divisor){
+                primos[multiplos-1] = false;
+                printf("%" PRId64 " es primo\n",multiplos-1);
+              }
+            }
+          }
+          //Criba
+    
     for(int elemento = 0; elemento<array_entrada->capacidad;elemento++){
-      sumas_golbach(array_entrada->array[elemento]);
+      sumas_golbach(array_entrada->array[elemento],primos,mayor);
+      
     }
 
+    free(primos);
     free(array_entrada);
     //free(array_sumas);
     
@@ -62,7 +87,7 @@ int main(){
  * @param int64_t num, número leído de la entrada estándar
  * @param int64_t* array_sumas, acá se almacenan los sumandos 
  */
-void sumas_golbach(int64_t num){
+void sumas_golbach(int64_t num, bool* primos, int64_t mayor){
     int mostrar_sumas = 0;
     
     printf("%" PRId64 ": ", num);
@@ -76,9 +101,9 @@ void sumas_golbach(int64_t num){
         printf("NA\n");
     }else 
         if(num%2 == 0){
-            golbach_par(num,mostrar_sumas);
+            golbach_par(num,mostrar_sumas, primos, mayor);
         } else{
-            golbach_impar(num,mostrar_sumas);
+            golbach_impar(num,mostrar_sumas, primos, mayor);
         }
 }
   
@@ -88,7 +113,7 @@ void sumas_golbach(int64_t num){
  * @param int64_t num, número leído de la entrada estándar
  * @param dynamic_array_t* array_sumas, acá se almacenan los sumandos
  */
-void golbach_par(int64_t num,int64_t mostrar_sumas ){
+void golbach_par(int64_t num,int64_t mostrar_sumas, bool* primos, int64_t mayor){
     int64_t par1 = 2;
     int64_t par2 = 2;
 
@@ -112,9 +137,9 @@ void golbach_par(int64_t num,int64_t mostrar_sumas ){
                 }
                 cantidad_sumas++;
             }
-            par2 = siguiente_primo(par2);
+            par2 = siguiente(par2,primos,mayor);
         }
-        par1 = siguiente_primo(par1);
+        par1 = siguiente(par1,primos,mayor);
     }
     imprimir_resultado(array_sumas, mostrar_sumas, cantidad_sumas, true);
     free(array_sumas);
@@ -125,7 +150,7 @@ void golbach_par(int64_t num,int64_t mostrar_sumas ){
  * @param int64_t num, número leído de la entrada estándar
  * @param dynamic_array_t* array_sumas, acá se almacenan los sumandos
  */
-void golbach_impar(int64_t num,int64_t mostrar_sumas ){
+void golbach_impar(int64_t num,int64_t mostrar_sumas, bool* primos, int64_t mayor){
     int64_t primo1 = 2;
     int64_t primo2 = 2;
     int64_t primo3 = 2;
@@ -151,16 +176,33 @@ void golbach_impar(int64_t num,int64_t mostrar_sumas ){
             append_dynamic_array(array_sumas,primo2);
             append_dynamic_array(array_sumas,primo3);
           }
-          cantidad_sumas ++;
+          cantidad_sumas++;
         }
-        primo3 = siguiente_primo(primo3);
+        primo3 = siguiente(primo3,primos,mayor);
       }
-      primo2 = siguiente_primo(primo2);
+      primo2 = siguiente(primo2,primos,mayor);
     }
-    primo1 = siguiente_primo(primo1);
+    primo1 = siguiente(primo1,primos,mayor);
   }
-  imprimir_resultado(array_sumas,  mostrar_sumas, cantidad_sumas, false);
+  imprimir_resultado(array_sumas, mostrar_sumas, cantidad_sumas, false);
    free(array_sumas);
+}
+
+
+int64_t siguiente(int64_t primo, bool* primos,int64_t mayor){
+  
+  int64_t siguiente_primo = primo;
+  
+  bool hay_primo = true;
+  while (siguiente_primo < mayor && hay_primo ){
+    if(primos[siguiente_primo] == true)
+      hay_primo = false;
+    else 
+      siguiente_primo++;
+  }
+
+  return siguiente_primo + 1;
+  
 }
 
 /**
@@ -224,7 +266,7 @@ void imprimir_resultado(dynamic_array_t* array_sumas
         } else {  // si es impar el for va de 3 en 3
             for (int64_t indice = 0; indice < array_sumas->capacidad; indice+=3) {
                 printf(" %" PRId64 " + ", array_sumas->array[indice]);
-                printf(" %" PRId64 " + ", array_sumas->array[indice+1]);
+                printf("%" PRId64 " + ", array_sumas->array[indice+1]);
                 printf("%" PRId64 "", array_sumas->array[indice+2]);
                 if (indice + 3 != array_sumas->capacidad) {
                    printf(",");
