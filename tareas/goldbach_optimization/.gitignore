@@ -3,3 +3,4 @@ golbach
 html
 latex
 doc
+*.out.*
