@@ -37,7 +37,6 @@ typedef struct
   int64_t* primo;
   int64_t mayor;
   
-  pthread_mutex_t can_access_shared;
   char** array_sumas;
 
 }shared_data_t;
