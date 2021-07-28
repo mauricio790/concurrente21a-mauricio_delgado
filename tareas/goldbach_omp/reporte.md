@@ -1,66 +1,17 @@
 # Reporte de eficiencia
 ---
-# Optimización 1
+
+# Comparación 01: Concurrencia en OMP vs pthreads
+
+Para realizar esta comparación de concurrencia se utilizó el código con las mismas optimizaciones en ambos partes con la única diferencia de su implementación de concurrencia para así asegurar una comparación más justa. Dado el enunciado, la única diferencia está en el mapeo. 
+
+La versión con pthreads mapea dinámicamente los números introducidos por el usuario entre la cantidad total de hilos disponibles mientras que la versión con OMP mapea las sumas de cada número, o sea que todos los hilos trabajan en las sumas de un mismo número a la vez. El speedup se realizó respecto a la versión serial que tenía una duración de **378.25 seg**
+
+Notamos que los tiempos de ejecución tienen una diferencia de 15 seg aproximadamente, por lo tanto deducimos que la concurrencia con OMP es la más óptima para este programa.
 
 **Tiempos de ejecución**
-| Serial    | Tarea02 | Optimización 1 |
-| --- |:--------:|:--------:|
-|378.248 seg     |    161.857 seg   |     145.206 seg   |
- ---
-# Opimización 2
-
-
-
-En kCachegrind podemos ver que el método es_primo:
-
-```
-int64_t es_primo(int64_t num){
-  if(num == 2){
-    return 1;
-  }//caso trivial
-  if(num <= 1 || !(num & 1)){
-    return 0;
-  } //caso trivial
-  for(int64_t impares = 3;impares*impares<=num;impares+=2){
-    if(num%impares == 0){
-      return 0;
-    }
-  }
-  return 1;
-}
-```
-se usa un total de **7967608** veces. En su mayoría de veces verificando los números primos que tienen en común. Por ejemplo, los números **20** y **11** tienen en común los primos **1,2,3,5 y 7**, el programa no tiene registro de cuáles números primos cononce.  
-
-![](https://i.imgur.com/nQgyyRM.png)
-
-Esta optimización se encargará de registrar estos primos y ahorrarnos el ciclo que los verifica.
-```
-for(int64_t impares = 3;impares*impares<=num;impares+=2){
-    if(num%impares == 0){
-      return 0;
-    }
-  }
-```
-**Tiempos de ejecución con Optimización 2**
-
-
-
-| Antes | Después |
+| pThread | OpenMP |
 |:-----:|:-------:|
-| 145.206 seg  | 50.726 seg  |
----
-# Comparación 01: Optimizaciones
+| 50.73 seg  | 35.30 seg  |
 
-
-|   Tarea01   |   Tarea02   | Optimización 1 | Optimización 2 |
-|:-----------:|:-----------:|:--------------:|:--------------:|
-| 378.248 seg | 161.857 seg |  145.206 seg   |   50.726 seg   |
-
-![](https://i.imgur.com/YKTP9h8.png)
-
-
-
----
-# Comparación 02: grado de concurrencia
-
-![](https://i.imgur.com/r2MhkXI.png)
+![](https://i.imgur.com/ELz3ZHr.png)
