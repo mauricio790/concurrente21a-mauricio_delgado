@@ -1,4 +1,4 @@
-APPNAME=golbach
+APPNAME=goldbach
 
 CC=cc
 CFLAGS=-g -std=gnu11 -Wall -Wextra

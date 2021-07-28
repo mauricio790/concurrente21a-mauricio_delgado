@@ -1,0 +1,21 @@
+0: NA
+1: NA
+2: NA
+3: NA
+4: NA
+5: NA
+6: 1 sums
+7: 1 sums
+8: 1 sums
+9: 2 sums
+10: 2 sums
+-1: NA
+-2: NA
+-3: NA
+-4: NA
+-5: NA
+-6: 1 sums: 3 + 3
+-7: 1 sums: 2 +  2 + 3
+-8: 1 sums: 3 + 5
+-9: 2 sums: 2 +  2 + 5, 3 +  3 + 3
+-10: 2 sums: 3 + 7, 5 + 5

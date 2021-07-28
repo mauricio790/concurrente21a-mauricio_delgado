@@ -1,4 +1,4 @@
-APPNAME=golbach
+APPNAME=goldbach
 HEADERS=$(wildcard *.h)
 SOURCES=$(wildcard *.c)
 OBJECTS=$(SOURCES:%.c=build/%.o)
